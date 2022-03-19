@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
 import { Shipment } from "./Shipment"
+import { ShipmentDayBucket, aggregateShipmentsIntoBuckets } from "./ShipmentDayBucket";
 import { SHIPMENTS_DATA } from './shipments-data'
 
 type ErrorResult = {
@@ -7,14 +8,24 @@ type ErrorResult = {
     message: string
 }
 
-type SuccessResult = {
+type SuccessShipmentResult = {
     status: 'SUCCESS'
     shipments: Shipment[]
 }
 
+type SuccessShipmentDayBucketsResult = {
+    status: 'SUCCESS'
+    dayBuckets: ShipmentDayBucket[]
+}
+
 export type FetchShipmentsResult =
     | ErrorResult
-    | SuccessResult
+    | SuccessShipmentResult
+
+export type FetchShipmentDayBucketsResult =
+    | ErrorResult
+    | SuccessShipmentDayBucketsResult
+
 
 // To make your life easier, we'll adjust the dates to be more current
 const millisToAdd = new Date().getTime() - new Date("4/19/19").getTime()
@@ -30,6 +41,8 @@ const adjustShipmentDates = (shipments: Shipment[]): Shipment[] => shipments.map
     estimatedArrival: adjustDateString(shipment.estimatedArrival),
     estimatedDeparture: adjustDateString(shipment.estimatedDeparture)
 }))
+
+
 
 // Feel free to change this constant to a really high % during your testing to
 // make sure your failure handling works, and to a low number while you're
@@ -53,5 +66,18 @@ export const fetchShipments = async (): Promise<FetchShipmentsResult> => {
     return {
         status: 'SUCCESS',
         shipments: adjustShipmentDates(SHIPMENTS_DATA)
+    }
+}
+
+//This could eventually be more case-specific network call instead of on that lists all shipments and then manipulates the result
+export const fetchShipmentsForDashboard = async (): Promise<FetchShipmentDayBucketsResult> => {
+    const result = await fetchShipments()
+    if (result.status === 'ERROR') {
+        return result
+    }
+
+    return {
+        status: 'SUCCESS',
+        dayBuckets: aggregateShipmentsIntoBuckets(result.shipments)
     }
 }
