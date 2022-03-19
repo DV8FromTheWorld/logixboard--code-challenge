@@ -1,47 +1,46 @@
 import { format } from 'date-fns'
-import { Shipment } from "./Shipment"
-import { ShipmentDayBucket, aggregateShipmentsIntoBuckets } from "./ShipmentDayBucket";
+import { Shipment } from './Shipment'
+import { ShipmentDayBucket, aggregateShipmentsIntoBuckets } from './ShipmentDayBucket';
 import { SHIPMENTS_DATA } from './shipments-data'
 
 type ErrorResult = {
-    status: 'ERROR'
-    message: string
+  status: 'ERROR'
+  message: string
 }
 
 type SuccessShipmentResult = {
-    status: 'SUCCESS'
-    shipments: Shipment[]
+  status: 'SUCCESS'
+  shipments: Shipment[]
 }
 
 type SuccessShipmentDayBucketsResult = {
-    status: 'SUCCESS'
-    dayBuckets: ShipmentDayBucket[]
+  status: 'SUCCESS'
+  dayBuckets: ShipmentDayBucket[]
 }
 
 export type FetchShipmentsResult =
-    | ErrorResult
-    | SuccessShipmentResult
+  | ErrorResult
+  | SuccessShipmentResult
 
 export type FetchShipmentDayBucketsResult =
-    | ErrorResult
-    | SuccessShipmentDayBucketsResult
+  | ErrorResult
+  | SuccessShipmentDayBucketsResult
 
 
 // To make your life easier, we'll adjust the dates to be more current
-const millisToAdd = new Date().getTime() - new Date("4/19/19").getTime()
+const millisToAdd = new Date().getTime() - new Date('4/19/19').getTime()
 const adjustDateString = (dateString: string): string => {
-    const originalTimeInMillis = new Date(dateString).getTime()
-    const newTimeInMillis = originalTimeInMillis + millisToAdd
-    const adjustedDate = new Date(newTimeInMillis)
-    return format(adjustedDate, 'MM/dd/yy')
+  const originalTimeInMillis = new Date(dateString).getTime()
+  const newTimeInMillis = originalTimeInMillis + millisToAdd
+  const adjustedDate = new Date(newTimeInMillis)
+  return format(adjustedDate, 'MM/dd/yy')
 }
 
 const adjustShipmentDates = (shipments: Shipment[]): Shipment[] => shipments.map(shipment => ({
-    ...shipment,
-    estimatedArrival: adjustDateString(shipment.estimatedArrival),
-    estimatedDeparture: adjustDateString(shipment.estimatedDeparture)
+  ...shipment,
+  estimatedArrival: adjustDateString(shipment.estimatedArrival),
+  estimatedDeparture: adjustDateString(shipment.estimatedDeparture)
 }))
-
 
 
 // Feel free to change this constant to a really high % during your testing to
@@ -50,34 +49,34 @@ const adjustShipmentDates = (shipments: Shipment[]): Shipment[] => shipments.map
 const FAILURE_RATIO = 0.05
 
 const setTimeoutAsync = async (millis: number): Promise<void> => {
-    return new Promise(resolve => setTimeout(resolve, millis))
+  return new Promise(resolve => setTimeout(resolve, millis))
 }
 
 export const fetchShipments = async (): Promise<FetchShipmentsResult> => {
-    const waitTimeMillis = 200 + 1800 * Math.random()
-    await setTimeoutAsync(waitTimeMillis)
-    const shouldFail = Math.random() < FAILURE_RATIO
-    if (shouldFail) {
-        return {
-            status: 'ERROR',
-            message: 'Something went wrong'
-        }
-    }
+  const waitTimeMillis = 200 + 1800 * Math.random()
+  await setTimeoutAsync(waitTimeMillis)
+  const shouldFail = Math.random() < FAILURE_RATIO
+  if (shouldFail) {
     return {
-        status: 'SUCCESS',
-        shipments: adjustShipmentDates(SHIPMENTS_DATA)
+      status: 'ERROR',
+      message: 'Something went wrong'
     }
+  }
+  return {
+    status: 'SUCCESS',
+    shipments: adjustShipmentDates(SHIPMENTS_DATA)
+  }
 }
 
 //This could eventually be more case-specific network call instead of on that lists all shipments and then manipulates the result
 export const fetchShipmentsForDashboard = async (): Promise<FetchShipmentDayBucketsResult> => {
-    const result = await fetchShipments()
-    if (result.status === 'ERROR') {
-        return result
-    }
+  const result = await fetchShipments()
+  if (result.status === 'ERROR') {
+    return result
+  }
 
-    return {
-        status: 'SUCCESS',
-        dayBuckets: aggregateShipmentsIntoBuckets(result.shipments)
-    }
+  return {
+    status: 'SUCCESS',
+    dayBuckets: aggregateShipmentsIntoBuckets(result.shipments)
+  }
 }

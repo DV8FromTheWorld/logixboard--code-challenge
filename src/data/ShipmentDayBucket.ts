@@ -1,10 +1,10 @@
-import { Shipment } from "./Shipment";
-import {differenceInDays, format, isAfter, isSameDay} from "date-fns";
+import { Shipment } from './Shipment';
+import { differenceInDays, format, isAfter, isSameDay } from 'date-fns';
 
 export type ShipmentDayBucket = {
-    date: string,
-    dayOfWeek: string,
-    shipments: Shipment[]
+  date: string,
+  dayOfWeek: string,
+  shipments: Shipment[]
 }
 
 /**
@@ -20,35 +20,35 @@ export type ShipmentDayBucket = {
  * @return {ShipmentDayBucket[]}
  */
 export const aggregateShipmentsIntoBuckets = (shipments: Shipment[]): ShipmentDayBucket[] => {
-    const currentDate = new Date()
-    return shipments
-        .filter(shipment => {
-            const arrivalDate = new Date(shipment.estimatedArrival)
+  const currentDate = new Date()
+  return shipments
+    .filter(shipment => {
+      const arrivalDate = new Date(shipment.estimatedArrival)
 
-            //Only deal with dates that are today or the future
-            if (!isAfter(arrivalDate, currentDate) && !isSameDay(arrivalDate, currentDate)) {
-                return false
-            }
+      //Only deal with dates that are today or the future
+      if (!isAfter(arrivalDate, currentDate) && !isSameDay(arrivalDate, currentDate)) {
+        return false
+      }
 
-            //This intentionally allows 8 possible days (0 - 7, Today + 7 more days)
-            return differenceInDays(arrivalDate, currentDate) <= 7
-        })
-        .reduce<ShipmentDayBucket[]>((dayBuckets, shipment) => {
-            const arrivalDate = shipment.estimatedArrival
+      //This intentionally allows 8 possible days (0 - 7, Today + 7 more days)
+      return differenceInDays(arrivalDate, currentDate) <= 7
+    })
+    .reduce<ShipmentDayBucket[]>((dayBuckets, shipment) => {
+      const arrivalDate = shipment.estimatedArrival
 
-            let dayBucket = dayBuckets.find(group => group.date === arrivalDate)
-            if (!dayBucket) {
-                dayBucket = {
-                    date: arrivalDate,
-                    dayOfWeek: format(new Date(arrivalDate), 'EEEE'),
-                    shipments: []
-                }
-                dayBuckets.push(dayBucket)
-            }
+      let dayBucket = dayBuckets.find(group => group.date === arrivalDate)
+      if (!dayBucket) {
+        dayBucket = {
+          date: arrivalDate,
+          dayOfWeek: format(new Date(arrivalDate), 'EEEE'),
+          shipments: []
+        }
+        dayBuckets.push(dayBucket)
+      }
 
-            dayBucket.shipments.push(shipment)
+      dayBucket.shipments.push(shipment)
 
-            return dayBuckets
-        }, [])
-        .sort((bucket1, bucket2) => bucket1.date.localeCompare(bucket2.date))
+      return dayBuckets
+    }, [])
+    .sort((bucket1, bucket2) => bucket1.date.localeCompare(bucket2.date))
 }
