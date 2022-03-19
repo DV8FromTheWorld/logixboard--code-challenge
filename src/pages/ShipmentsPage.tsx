@@ -1,8 +1,10 @@
-import { ReactElement, useEffect, useState } from "react"
-import { Box, makeStyles, useTheme } from "@material-ui/core"
-import { DataGrid, GridColDef } from "@material-ui/data-grid"
-import Loader from 'react-loader-spinner'
-import { fetchShipments, FetchShipmentsResult } from "../data/fetch-shipments"
+import { ReactElement, useEffect, useState } from 'react'
+import Loader                                from 'react-loader-spinner'
+import { Box, makeStyles, useTheme }         from '@material-ui/core'
+import { DataGrid, GridColDef }              from '@material-ui/data-grid'
+
+import { LoadFailureAlert } from "../components/LoadFailureAlert";
+import { fetchShipments, FetchShipmentsResult } from '../data/fetch-shipments'
 
 const COLUMNS: GridColDef[] = [
     {
@@ -48,15 +50,14 @@ const COLUMNS: GridColDef[] = [
 ]
 
 const useStyles = makeStyles({
-    grid: {
+    shipmentTable: {
         marginInline: 16,
-        height: '100%'
     },
     loader: {
         margin: 'auto',
         width: 'fit-content',
         marginTop: 200
-    }
+    },
 })
 
 type LoadingResult = {
@@ -71,29 +72,37 @@ export const ShipmentsPage: React.FC = () => {
     const theme = useTheme()
 
     const [fetchShipmentsResult, setFetchShipmentsResult] = useState<FetchShipmentsResult | LoadingResult>(INITIAL_RESULT)
-    useEffect(() => {
+
+    const loadShipments = () => {
+        setFetchShipmentsResult(INITIAL_RESULT)
         fetchShipments().then(result => setFetchShipmentsResult(result))
+    }
+
+    useEffect(() => {
+        loadShipments()
     }, [])
 
     let component: ReactElement
     switch (fetchShipmentsResult.status) {
-        case 'SUCCESS':
+        case 'SUCCESS': {
             component = <DataGrid
-                className={classes.grid}
+                className={classes.shipmentTable}
                 rows={fetchShipmentsResult.shipments}
+                autoPageSize={true}
                 columns={COLUMNS}
-                pageSize={20}
                 disableSelectionOnClick
             />
             break;
-        case 'LOADING':
+        }
+        case 'LOADING': {
             component = <Box className={classes.loader}>
-                <Loader type="Grid" color={theme.palette.primary.main} />
-            </Box >
+                <Loader type="Grid" color={theme.palette.primary.main}/>
+            </Box>
             break
-        case 'ERROR':
-            component = <p>Error</p>
-            break
+        }
+        case 'ERROR': {
+            component = <LoadFailureAlert retryHandler={loadShipments}/>
+        }
     }
 
     return component
